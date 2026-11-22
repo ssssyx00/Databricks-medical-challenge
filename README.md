@@ -1,7 +1,5 @@
 # CMU Datathon
 
-> An evidence-aware healthcare facility search platform for India, built around the Virtue Foundation dataset for the Databricks Apps & Agents for Good 2026 Hackathon.
-
 Finding a nearby hospital does not guarantee that it offers the care a patient needs. **CareFinder** helps users discover healthcare facilities by location and service, compare their documented capabilities, and understand the evidence behind every recommendation.
 
 Instead of treating missing information as unavailable care, CareFinder makes uncertainty visible.
