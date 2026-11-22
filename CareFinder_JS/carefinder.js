@@ -1,0 +1,693 @@
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const mode = document.querySelector('meta[name="care-mode"]').content;
+const JAIPUR = { latitude: 26.9124, longitude: 75.7873, label: "Selected point in Jaipur" };
+const modes = [
+  {
+    key: "fused_rank",
+    title: "Balanced",
+    caption: "Distance and service evidence together",
+    theme: "balanced",
+    icon: "layers",
+  },
+  {
+    key: "distance_rank",
+    title: "Nearest",
+    caption: "Shortest straight-line distance",
+    theme: "distance",
+    icon: "route",
+  },
+  {
+    key: "relevance_rank",
+    title: "Best Match",
+    caption: "Strongest documented service match",
+    theme: "relevance",
+    icon: "match",
+  },
+];
+const state = {
+  service: "dialysis",
+  radius: 30,
+  origin: { ...JAIPUR },
+  results: [],
+  selected: null,
+  selectedOrder: "fused_rank",
+  status: "idle",
+  error: "",
+  method: "",
+  partial: 0,
+  expanded: new Set(),
+  version: 0,
+};
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+let controller,
+  debounce,
+  requestKey = "",
+  atlas, reports, serviceMenu;
+
+function node(tag, cls = "", text = "") {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+function icon(name) {
+  const ns = "http://www.w3.org/2000/svg",
+    s = document.createElementNS(ns, "svg"),
+    u = document.createElementNS(ns, "use");
+  s.setAttribute("class", "ic");
+  s.setAttribute("aria-hidden", "true");
+  u.setAttribute("href", "#i-" + name);
+  s.append(u);
+  return s;
+}
+function action(label, callback, cls = "smallbtn") {
+  const b = node("button", cls, label);
+  b.type = "button";
+  b.addEventListener("click", callback);
+  return b;
+}
+function announce(text) {
+  $("announcer").textContent = text;
+}
+function text(v) {
+  return typeof v === "string" ? v.trim() : "";
+}
+function validCoords(lat, lon) {
+  return Number.isFinite(lat) && Math.abs(lat) <= 90 && Number.isFinite(lon) && Math.abs(lon) <= 180;
+}
+function urlFor(value) {
+  try {
+    const u = new URL(value);
+    return ["https:", "http:"].includes(u.protocol) ? u : null;
+  } catch {
+    return null;
+  }
+}
+function strings(value) {
+  return Array.isArray(value) ? value.filter((v) => text(v)).map((v) => v.trim()) : [];
+}
+function distanceLabel(row) {
+  return Number.isFinite(row.distance_km) ? row.distance_km.toFixed(1) + " km" : "Distance unreported";
+}
+function distanceDescription(row) {
+  return Number.isFinite(row.distance_km) ? distanceLabel(row) + " straight-line" : "Distance unreported";
+}
+function serviceName() {
+  return $("service").selectedOptions[0].textContent;
+}
+function shortOrigin(origin) {
+  const city = (window.CARE_PLACES || []).find(
+    (p) => p.latitude === origin.latitude && p.longitude === origin.longitude,
+  );
+  if (city) return city.name;
+  if (origin.label === "Current location") return "My location";
+  return origin.latitude.toFixed(4) + "°, " + origin.longitude.toFixed(4) + "°";
+}
+function requestBody() {
+  return { service_id: state.service, origin: { ...state.origin }, radius_km: state.radius };
+}
+
+/* Render only supplied claims and ranks. Rows with missing optional details stay usable.
+   A missing rank is never synthesized, and a missing coordinate never gets a made-up pin. */
+function readResponse(value, req) {
+  if (
+    !value ||
+    value.service_id !== req.service_id ||
+    value.radius_km !== req.radius_km ||
+    value.distance_method !== "straight_line" ||
+    !Array.isArray(value.results)
+  )
+    throw Error("The returned data did not match this service, radius or distance method.");
+  const ids = new Set(),
+    rows = [];
+  let omitted = 0;
+  for (const raw of value.results) {
+    if (!raw || !text(raw.facility_id) || !text(raw.facility_name) || ids.has(raw.facility_id)) {
+      omitted++;
+      continue;
+    }
+    if (Number.isFinite(raw.distance_km) && (raw.distance_km < 0 || raw.distance_km > req.radius_km)) {
+      omitted++;
+      continue;
+    }
+    const row = {
+      ...raw,
+      facility_name: text(raw.facility_name),
+      hasCoordinates: validCoords(raw.latitude, raw.longitude),
+      evidence: Array.isArray(raw.evidence) ? raw.evidence.filter((e) => e && text(e.quote)) : [],
+      record_source_urls: strings(raw.record_source_urls),
+      uncertainties: strings(raw.uncertainties),
+    };
+    for (const { key } of modes) row[key] = Number.isSafeInteger(raw[key]) && raw[key] > 0 ? raw[key] : null;
+    if (!modes.some(({ key }) => row[key] !== null)) {
+      omitted++;
+      continue;
+    }
+    rows.push(row);
+    ids.add(row.facility_id);
+  }
+  return { rows, omitted, method: text(value.fusion_method) };
+}
+
+function renderSearchControls() {
+  $("service-text").textContent = serviceName();
+  $("radius-text").textContent = state.radius >= 4000 ? "All of India" : state.radius + " km";
+  $("origin-text").textContent = shortOrigin(state.origin);
+  $("origin-button").title =
+    state.origin.label + " · " + state.origin.latitude + ", " + state.origin.longitude;
+}
+function schedule(force = false) {
+  const req = requestBody(),
+    sig = JSON.stringify(req);
+  if (!force && sig === requestKey) return;
+  requestKey = sig;
+  const version = ++state.version;
+  clearTimeout(debounce);
+  controller?.abort();
+  const localController = new AbortController();
+  controller = localController;
+  state.results = [];
+  state.selected = null;
+  state.status = "loading";
+  state.error = "";
+  state.method = "";
+  state.partial = 0;
+  state.expanded.clear();
+  state.selectedOrder = "fused_rank";
+  for (const id of ["record-dialog", "guide-dialog"]) if ($(id).open) $(id).close();
+  renderSearchControls();
+  atlas.setArea(state.origin, state.radius);
+  atlas.clear();
+  renderRankings();
+  renderSelection();
+  announce("Searching for " + serviceName());
+  debounce = setTimeout(async () => {
+    try {
+      let data;
+      if (mode === "standalone") data = standaloneSearch(req);
+      else {
+        const response = await fetch("./api/rank", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(req),
+          signal: localController.signal,
+          cache: "no-store",
+        });
+        if (!response.ok)
+          throw Error(
+            response.status === 504
+              ? "The ranking service timed out."
+              : "The ranking service could not complete this search.",
+          );
+        try {
+          data = await response.json();
+        } catch {
+          throw Error("The ranking service returned unreadable data.");
+        }
+      }
+      if (version !== state.version) return;
+      const parsed = readResponse(data, req);
+      state.results = parsed.rows;
+      state.partial = parsed.omitted;
+      state.method = parsed.method;
+      state.status = state.results.length ? "success" : state.partial ? "partial" : "empty";
+      atlas.setRows(state.results);
+    } catch (error) {
+      if (version !== state.version || error.name === "AbortError") return;
+      state.status = "error";
+      state.error = error.message || "Could not reach the ranking service.";
+    }
+    if (version !== state.version) return;
+    renderRankings();
+    renderSelection();
+    announce(
+      state.status === "error"
+        ? "Search unavailable. Retry when ready."
+        : state.results.length + " facilities returned.",
+    );
+  }, 0);
+}
+function setOrigin(origin, pan = false) {
+  if (!validCoords(origin.latitude, origin.longitude)) return;
+  serviceMenu.refresh(origin);
+  state.origin = origin;
+  if (pan) atlas.pan([origin.latitude, origin.longitude]);
+  schedule();
+}
+function select(id, key, source) {
+  const row = state.results.find((r) => r.facility_id === id);
+  if (!row) return;
+  if (key) state.selectedOrder = key;
+  state.selected = id;
+  if (source === "list" && row.hasCoordinates) atlas.pan([row.latitude, row.longitude]);
+  if (source === "map") {
+    // Reveal an off-screen row in the relevant ranking without moving the document's map.
+    let def = modes.find((d) => d.key === state.selectedOrder && row[d.key] !== null);
+    if (!def) def = modes.find((d) => row[d.key] !== null);
+    state.selectedOrder = def.key;
+    const ordered = orderedRows(def.key);
+    if (ordered.indexOf(row) >= 3 && !state.expanded.has(def.key)) {
+      state.expanded.add(def.key);
+      renderRankings();
+    }
+  }
+  renderSelection();
+  if (source === "list" && matchMedia("(max-width:740px)").matches) {
+    const target = row.hasCoordinates ? $("map-heading") : $("selected-strip");
+    target.scrollIntoView({ block: "start", behavior: reducedMotion.matches ? "instant" : "smooth" });
+  }
+  if (source === "map") {
+    const list = document.querySelector('[data-list="' + state.selectedOrder + '"]');
+    const button = list && [...list.querySelectorAll("button")].find((b) => b.dataset.id === id);
+    if (button) {
+      list.scrollTop += button.getBoundingClientRect().top - list.getBoundingClientRect().top;
+      if (matchMedia("(max-width:740px)").matches)
+        button.scrollIntoView({ block: "nearest", behavior: reducedMotion.matches ? "instant" : "smooth" });
+    }
+  }
+  announce(row.facility_name + " selected. " + distanceLabel(row) + ". Facility evidence is available.");
+}
+function orderedRows(key) {
+  // Stable sort preserves response order among equal ranks.
+  return state.results.filter((r) => r[key] !== null).sort((a, b) => a[key] - b[key]);
+}
+function rankPanel(def) {
+  const panel = node("article", "rank-panel " + def.theme);
+  const head = node("div", "rank-head"),
+    badge = node("span", "rank-icon");
+  badge.append(icon(def.icon));
+  const titles = node("div");
+  titles.append(node("h3", "", def.title), node("p", "", def.caption));
+  head.append(badge, titles);
+  panel.append(head);
+  const ordered = orderedRows(def.key),
+    list = node("ol", "rank-list");
+  list.setAttribute("aria-label", def.title + " facilities");
+  list.dataset.list = def.key;
+  const all = state.expanded.has(def.key);
+  for (const row of all ? ordered : ordered.slice(0, 3)) {
+    const li = node("li"),
+      btn = action("", () => select(row.facility_id, def.key, "list"), "rank-row");
+    btn.dataset.id = row.facility_id;
+    btn.setAttribute("aria-pressed", String(state.selected === row.facility_id));
+    btn.setAttribute(
+      "aria-label",
+      def.title + " rank " + row[def.key] + ", " + row.facility_name + ", " + distanceLabel(row),
+    );
+    btn.append(
+      node("span", "rank-number", String(row[def.key])),
+      node("span", "rank-name", row.facility_name),
+      node("span", "rank-km", distanceLabel(row)),
+      icon("right"),
+    );
+    li.append(btn);
+    list.append(li);
+  }
+  panel.append(list);
+  if (ordered.length < state.results.length) {
+    const missing = state.results.length - ordered.length;
+    panel.append(
+      node(
+        "div",
+        "rank-missing",
+        missing +
+          " " +
+          (missing === 1 ? "facility has" : "facilities have") +
+          " no reported rank in this list.",
+      ),
+    );
+  }
+  if (ordered.length > 3) {
+    const toggle = action(
+      all ? "Show top 3" : "Show all " + ordered.length,
+      () => {
+        if (all) state.expanded.delete(def.key);
+        else state.expanded.add(def.key);
+        const replacement = rankPanel(def);
+        panel.replaceWith(replacement);
+        replacement.querySelector(".rank-more")?.focus({ preventScroll: true });
+      },
+      "rank-more",
+    );
+    toggle.setAttribute("aria-expanded", String(all));
+    panel.append(toggle);
+  }
+  return panel;
+}
+function renderRankings() {
+  const area = $("result-state"),
+    ranks = $("rankings");
+  area.replaceChildren();
+  ranks.replaceChildren();
+  const n = state.results.length;
+  $("result-count").textContent =
+    state.status === "loading"
+      ? "Searching…"
+      : state.status === "error"
+        ? "Unavailable"
+        : n + (n === 1 ? " facility" : " facilities");
+  $("result-hint").hidden = !n;
+  if (state.status === "success") {
+    for (const mode of modes) ranks.append(rankPanel(mode));
+    const notes = [];
+    if (state.partial)
+      notes.push(
+        state.partial +
+          " unusable or duplicate " +
+          (state.partial === 1 ? "record was" : "records were") +
+          " omitted.",
+      );
+    const missing = n - state.results.filter((r) => r.hasCoordinates).length;
+    if (missing)
+      notes.push(
+        missing + " " + (missing === 1 ? "facility has" : "facilities have") + " no mappable coordinates.",
+      );
+    $("result-hint").textContent = notes.length
+      ? notes.join(" ")
+      : "Select a facility to locate it and inspect its evidence.";
+    return;
+  }
+  const panel = node("div", "status-panel");
+  area.append(panel);
+  if (state.status === "loading") {
+    panel.setAttribute("aria-busy", "true");
+    panel.append(
+      node("h3", "", "Finding nearby facilities…"),
+      node("div", "skeleton"),
+      node("div", "skeleton"),
+    );
+    return;
+  }
+  if (state.status === "error") {
+    panel.append(
+      node("h3", "", "Search unavailable"),
+      node("p", "", state.error),
+      action("Retry search", () => schedule(true), "secondary"),
+    );
+    return;
+  }
+  if (state.status === "partial") {
+    panel.append(
+      node("h3", "", "Records could not be displayed"),
+      node(
+        "p",
+        "",
+        "The response is missing usable facility identities or ranks, or contains records outside the requested radius.",
+      ),
+    );
+    return;
+  }
+  panel.append(
+    node("h3", "", "No matching facilities in this area"),
+    node(
+      "p",
+      "",
+      mode === "live"
+        ? "Try another service, move the starting point or widen the search radius."
+        : "This demo contains two fictional dialysis records near Jaipur.",
+    ),
+  );
+  if (mode !== "live")
+    panel.append(
+      action(
+        "Show Jaipur dialysis demo",
+        () => {
+          $("service").value = "dialysis";
+          $("radius").value = "30";
+          state.service = "dialysis";
+          state.radius = 30;
+          setOrigin({ ...JAIPUR });
+          atlas.showArea();
+        },
+        "secondary",
+      ),
+    );
+}
+function renderSelection() {
+  const row = state.results.find((r) => r.facility_id === state.selected);
+  atlas.highlight(state.selected, state.selectedOrder);
+  const desc = modes.find((m) => m.key === state.selectedOrder);
+  $("pin-order").textContent =
+    "Pins: " +
+    { fused_rank: "balanced", distance_rank: "distance", relevance_rank: "match" }[desc.key] +
+    " rank";
+  for (const btn of document.querySelectorAll(".rank-row")) {
+    const picked = btn.dataset.id === state.selected;
+    btn.setAttribute("aria-pressed", String(picked));
+    const arrow = btn.lastElementChild.firstElementChild;
+    arrow.setAttribute("href", picked ? "#i-check" : "#i-right");
+  }
+  const strip = $("selected-strip");
+  strip.replaceChildren();
+  strip.hidden = !row;
+  if (!row) return;
+  const copy = node("div", "selected-text");
+  copy.append(
+    node("h3", "", row.facility_name),
+    node(
+      "p",
+      "",
+      serviceName() +
+        " · " +
+        distanceDescription(row) +
+        (row.hasCoordinates ? "" : " · coordinates unavailable"),
+    ),
+  );
+  if (text(row.relevance_reason)) copy.append(node("p", "selection-reason", row.relevance_reason));
+  const button = action("View evidence", () => openRecord(row));
+  button.prepend(icon("doc"));
+  const actions=node("div","facility-actions");
+  if(row.hasCoordinates){
+    const street=action("Street detail",()=>{atlas.streetDetail(row);if(matchMedia("(max-width:740px)").matches)$("map-heading").scrollIntoView({block:"start"});});
+    street.prepend(icon("street"));actions.append(street);
+  }
+  const reportButton=action("Report",()=>reports.open(row,state.service,serviceName()));
+  reportButton.prepend(icon("flag"));actions.append(button,reportButton);
+  const dismiss = action(
+    "",
+    () => {
+      state.selected = null;
+      renderSelection();
+      $("map").focus({ preventScroll: true });
+    },
+    "clear-record",
+  );
+  dismiss.setAttribute("aria-label", "Clear selected facility");
+  dismiss.append(icon("x"));
+  strip.append(copy, dismiss, actions);
+}
+
+function openRecord(row) {
+  $("record-title").textContent = row.facility_name;
+  const body = $("record-body");
+  body.replaceChildren();
+  const copy = node("div", "record-copy"),
+    badges = node("div", "record-badges");
+  for (const mode of modes)
+    if (row[mode.key] !== null) badges.append(node("span", "", mode.title + " #" + row[mode.key]));
+  copy.append(node("p", "", serviceName() + " · " + distanceDescription(row)), badges);
+  copy.append(
+    node("h3", "", "Why this facility"),
+    node("p", "", text(row.relevance_reason) || "No matching reason supplied."),
+  );
+  copy.append(node("h3", "", "Facility evidence"));
+  for (const item of row.evidence) {
+    const q = node("blockquote", "", "“" + item.quote + "”");
+    const where = { procedure: "From the listed procedures", equipment: "From the equipment list",
+      capability: "From the listed capabilities", description: "From the description",
+      specialties: "From the specialty tags", admin_correction: "Administrator verification" }[item.field]
+      || (text(item.field) ? "From " + text(item.field).replace(/_/g, " ") : "");
+    const ref = [where, item.record_id != null ? "record " + String(item.record_id).slice(0, 8) : ""]
+      .filter(Boolean)
+      .join(", ");
+    if (ref) q.append(node("cite", "", ref));
+    copy.append(q);
+  }
+  if (!row.evidence.length) copy.append(node("p", "", "No supporting passage was supplied."));
+  copy.append(
+    node("h3", "", "Location"),
+    node("p", "", text(row.address) || "Address unavailable."),
+    node("p", "", text(row.location_basis) || "Location basis unknown."),
+  );
+  copy.append(node("h3", "", "Sources listed for this record"));
+  const urls = row.record_source_urls.map(urlFor).filter(Boolean);
+  if (urls.length) {
+    const ul = node("ul");
+    for (const url of urls) {
+      const li = node("li"),
+        a = node("a", "", "" + url.hostname + url.pathname);
+      a.href = url.href;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      li.append(a);
+      ul.append(li);
+    }
+    copy.append(ul);
+  } else copy.append(node("p", "", "No source URL supplied."));
+  if (row.uncertainties.length) {
+    copy.append(node("h3", "", "Uncertainties"));
+    const ul = node("ul");
+    row.uncertainties.forEach((v) => ul.append(node("li", "", v)));
+    copy.append(ul);
+  }
+  copy.append(
+    node(
+      "p",
+      "notice",
+      mode === "live"
+        ? "Confirm current service availability with the facility."
+        : "Fictional demonstration record.",
+    ),
+  );
+  const reportButton=action("Report an issue",()=>reports.open(row,state.service,serviceName()),"secondary");
+  reportButton.prepend(icon("flag"));copy.append(reportButton);body.append(copy);
+  $("record-dialog").showModal();
+}
+function openGuide() {
+  const body = $("guide-body");
+  body.replaceChildren();
+  const details = [
+    state.method ||
+      "Shows the combined ranking. The source did not describe how it balances distance and service evidence.",
+    "Orders the returned facilities by straight-line distance from your chosen starting point.",
+    "Ranks facilities by their documented match to the selected service. Open a facility to read the supporting passages.",
+  ];
+  modes.forEach((mode, i) => {
+    const part = node("section", "guide-item"),
+      badge = node("span", "rank-icon"),
+      txt = node("div");
+    badge.append(icon(mode.icon));
+    txt.append(node("h3", "", mode.title), node("p", "", details[i]));
+    part.append(badge, txt);
+    body.append(part);
+  });
+  body.append(
+    node(
+      "p",
+      "small",
+      "All three lists use the same search area. Markers show the active list’s rank; the selected facility is outlined in red.",
+    ),
+  );
+  $("guide-dialog").showModal();
+}
+
+let locationVersion = 0;
+function placeOptions() {
+  const target = $("place-options"),
+    q = $("place-query").value.trim().toLowerCase();
+  target.replaceChildren();
+  const norm = value => value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const query=norm(q);
+  const matches=(window.CARE_PLACES||[]).map(p=>{
+    const city=norm(p.city||p.name.split(",")[0]), name=norm(p.name);
+    const aliases=(p.aliases||[]).map(norm);
+    const score=!query?1:city===query?5:aliases.includes(query)?4:city.startsWith(query)?3:name.includes(query)||aliases.some(a=>a.includes(query))?2:0;
+    return {p,score};
+  }).filter(x=>x.score).sort((a,b)=>b.score-a.score||(b.p.population||0)-(a.p.population||0)).map(x=>x.p);
+  for (const p of matches.slice(0, 12)) {
+    const pick = action(
+      "",
+      () => {
+        $("location-dialog").close();
+        setOrigin({ latitude: p.latitude, longitude: p.longitude, label: p.label || p.name }, true);
+      },
+      "place-option",
+    );
+    pick.append(node("span", "", p.name), node("small", "", p.type || "Reference point"));
+    target.append(pick);
+  }
+  if (!matches.length)
+    target.append(node("p", "small", "No matching place in the lookup. Enter coordinates or click the map."));
+}
+function setup() {
+  if (mode !== "live") {
+    const badge = $("data-mode");
+    badge.hidden = false;
+    badge.textContent = "Demo data";
+    badge.title = "Two fictional dialysis facilities near Jaipur";
+  }
+  serviceMenu = new RegionalServiceMenu($("service"));
+  serviceMenu.refresh(state.origin);
+  reports=new FacilityReportForm();
+  $("global-report").addEventListener("click",()=>reports.choose(state.results,state.selected,state.service,serviceName()));
+  atlas = new FacilityAtlas(
+    state.origin,
+    state.radius,
+    (o) => setOrigin(o),
+    (id) => select(id, null, "map"),
+  );
+  $("service").addEventListener("change", () => {
+    state.service = $("service").value;
+    schedule();
+  });
+  $("radius").addEventListener("change", () => {
+    state.radius = Number($("radius").value);
+    schedule();
+  });
+  $("guide-button").addEventListener("click", openGuide);
+  for (const dialog of document.querySelectorAll("dialog")) {
+    dialog.querySelector(".close-dialog").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (e) => {
+      const b = dialog.getBoundingClientRect();
+      if (
+        e.target === dialog &&
+        (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom)
+      )
+        dialog.close();
+    });
+  }
+  $("origin-button").addEventListener("click", () => {
+    $("lat").value = state.origin.latitude;
+    $("lon").value = state.origin.longitude;
+    $("place-query").value = "";
+    $("geo-msg").textContent = "";
+    placeOptions();
+    $("location-dialog").showModal();
+  });
+  $("place-query").addEventListener("input", placeOptions);
+  $("coordinates").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const latitude = $("lat").valueAsNumber,
+      longitude = $("lon").valueAsNumber;
+    if (!validCoords(latitude, longitude)) return;
+    $("location-dialog").close();
+    setOrigin({ latitude, longitude, label: "Entered coordinates" }, true);
+  });
+  $("location-dialog").addEventListener("close", () => {
+    locationVersion++;
+    $("geolocate").disabled = false;
+  });
+  $("geolocate").addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      $("geo-msg").textContent = "Location is unavailable here. Enter coordinates or use the map.";
+      return;
+    }
+    const version = ++locationVersion;
+    $("geolocate").disabled = true;
+    $("geo-msg").textContent = "Locating…";
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (version !== locationVersion || !$("location-dialog").open) return;
+        $("location-dialog").close();
+        setOrigin(
+          {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            label: "Current location",
+          },
+          true,
+        );
+      },
+      () => {
+        if (version !== locationVersion) return;
+        $("geolocate").disabled = false;
+        $("geo-msg").textContent = "Location was unavailable. Use coordinates or choose a point on the map.";
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+    );
+  });
+  schedule();
+}
+setup();

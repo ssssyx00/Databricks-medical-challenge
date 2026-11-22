@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="care-mode" content="standalone" />
+    <meta name="care-suggestions" content="demo" />
+    <script type="application/json" id="suggestion-examples">[]</script>
+    <meta name="care-reports" content="preview" />
+    <meta name="theme-color" content="#102848" />
+    <title>CareFinder · India facility directory</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M13 5h6v8h8v6h-8v8h-6v-8H5v-6h8z' fill='%23173153'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="leaflet.js"></script>
+    <script defer src="places.js"></script>
+    <script defer src="india-geography.js"></script>
+    <script defer src="geography.js"></script>
+    <script defer src="streets-data.js"></script>
+    <script defer src="streets.js"></script>
+    <script defer src="demo.js"></script>
+    <script defer src="report-form.js"></script>
+    <script defer src="atlas.js"></script>
+    <script defer src="service-suggestions.js"></script>
+    <script defer src="carefinder.js"></script>
+  </head>
+  <body>
+    <svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="i-cross" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" /></symbol>
+      <symbol id="i-scope" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="7" />
+        <circle cx="12" cy="12" r="2" />
+        <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+      </symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24">
+        <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 0 1 16 0z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </symbol>
+      <symbol id="i-radius" viewBox="0 0 24 24">
+        <path d="M19 6a8.5 8.5 0 1 0 2 6" stroke-dasharray="3 3" />
+        <path d="m12 12 7-7m-4 0h4v4" />
+        <circle cx="12" cy="12" r="1" />
+      </symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" /></symbol>
+      <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" /></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" /></symbol>
+      <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6m0-6-10 10m8-1v6H4V6h6" /></symbol>
+      <symbol id="i-guide" viewBox="0 0 24 24">
+        <path d="M3 5c3-1 6-1 9 1 3-2 6-2 9-1v14c-3-1-6-1-9 1-3-2-6-2-9-1zM12 6v14" />
+      </symbol>
+      <symbol id="i-map" viewBox="0 0 24 24">
+        <path d="m2.5 6 6-3 7 3 6-3v15l-6 3-7-3-6 3zm6-3v15m7-12v15" />
+      </symbol>
+      <symbol id="i-fit" viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" /></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24">
+        <path d="m12 3 9 5-9 5-9-5zm-9 9 9 5 9-5m-18 4 9 5 9-5" />
+      </symbol>
+      <symbol id="i-route" viewBox="0 0 24 24">
+        <circle cx="5" cy="18" r="2.5" />
+        <circle cx="18" cy="5" r="2.5" />
+        <path d="M7.5 18H16a3 3 0 0 0 0-6H9a3.5 3.5 0 0 1 0-7h6" />
+      </symbol>
+      <symbol id="i-match" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="5" />
+        <circle cx="12" cy="12" r="1" />
+      </symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V3m0 1c5-3 8 3 14 0v10c-6 3-9-3-14 0"/></symbol>
+      <symbol id="i-street" viewBox="0 0 24 24"><path d="m7 3-5 18m15-18 5 18M12 3v4m0 4v3m0 4v3"/></symbol>
+      <symbol id="i-brand" viewBox="0 0 32 32"><path d="M12.5 2.5h7V11h8.5v7h-8.5v9h-7v-9H4v-7h8.5z" fill="currentColor"/><path d="m22.5 6.7 3-5.2 3 5.2z" fill="#83bcff"/></symbol>
+      <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7m-7 4h5" /></symbol>
+      <symbol id="i-hospital" viewBox="0 0 24 24">
+        <path d="M4 21V5h16v16m-18 0h20M12 7v6m-3-3h6m-5 11v-5h4v5" />
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12m0-12L6 18" /></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 11v6m0-10v.2" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14m-7-7v14" /></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+      <symbol id="i-gps" viewBox="0 0 24 24"><path d="m21 3-8 18-2-8-8-2z" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24">
+        <circle cx="10" cy="10" r="6" />
+        <path d="m15 15 5 5" />
+      </symbol>
+    </svg>
+    <header class="topbar">
+      <div class="wrap top-inner">
+        <div class="wordmark">
+          <svg class="brandmark" aria-hidden="true"><use href="#i-brand" /></svg>CareFinder
+        </div>
+        <span class="divide"></span
+        ><span class="country"><i class="flag" aria-hidden="true"></i> India facility directory</span>
+        <div class="top-actions">
+          <button class="guide-link" type="button" id="global-report" aria-label="Report an issue"><svg class="ic"><use href="#i-flag"/></svg><span>Report</span></button><span id="data-mode" class="mode-badge" hidden></span
+          ><button class="guide-link" id="guide-button" aria-label="Ranking guide">
+            <svg class="ic"><use href="#i-guide" /></svg><span>Ranking guide</span>
+          </button>
+        </div>
+      </div>
+    </header>
+    <main class="wrap">
+      <section class="heading">
+        <div>
+          <h1>Find care nearby<span class="title-dot">.</span></h1>
+          <p>Compare facilities by distance and documented service evidence.</p>
+        </div>
+        <div class="atlas-art" aria-hidden="true">
+          <svg viewBox="0 0 270 80" fill="none">
+            <g stroke="#b8cbe4" stroke-width="1.1">
+              <path d="M0 73C35 65 30 31 83 31s38 38 88 20S223 0 267 8" />
+              <path d="M0 63C28 57 31 21 82 21s46 42 86 25S224-7 270 0" />
+              <path d="M0 53C20 47 30 11 79 11s50 44 88 29S216-14 266-9" />
+              <path d="M0 82C44 74 35 41 87 41s35 33 85 16 56-42 98-38" />
+              <path d="M5 89C48 87 40 50 89 50s38 34 86 14 52-37 95-36" />
+              <path d="M21 91C58 83 53 59 91 59s38 30 87 12 51-39 92-32" />
+            </g>
+            <path d="m201 17 14-5-5 14-2-7z" fill="#2c619e" />
+            <circle cx="88" cy="36" r="6" stroke="#7899c1" />
+            <circle cx="88" cy="36" r="2.5" fill="#3d71ad" />
+          </svg>
+        </div>
+      </section>
+      <section class="filters" aria-label="Search settings">
+        <div class="control select-shell">
+          <span class="control-icon"
+            ><svg class="ic"><use href="#i-cross" /></svg
+          ></span>
+          <div class="field-text">
+            <label for="service">Care service</label><span id="service-text">Dialysis</span>
+          </div>
+          <svg class="ic down"><use href="#i-chev" /></svg
+          ><select id="service">
+            <option value="dialysis">Dialysis</option>
+            <option value="emergency_c_section">Emergency C-section</option>
+            <option value="nicu">Neonatal intensive care</option>
+            <option value="cardiac_surgery">Cardiac surgery</option>
+            <option value="mri">MRI</option>
+            <option value="burn_care">Burn care</option>
+          </select>
+        </div>
+        <button class="control location-control" id="origin-button" aria-haspopup="dialog">
+          <span class="control-icon"
+            ><svg class="ic"><use href="#i-pin" /></svg></span
+          ><span class="field-text"
+            ><small>Starting point</small><strong id="origin-text">Jaipur, Rajasthan</strong></span
+          ><svg class="ic down"><use href="#i-chev" /></svg>
+        </button>
+        <div class="control select-shell">
+          <span class="control-icon"
+            ><svg class="ic"><use href="#i-radius" /></svg
+          ></span>
+          <div class="field-text">
+            <label for="radius">Search radius</label><span id="radius-text">30 km</span>
+          </div>
+          <svg class="ic down"><use href="#i-chev" /></svg
+          ><select id="radius">
+            <option value="1">1 km</option>
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="20">20 km</option>
+            <option value="30" selected>30 km</option>
+            <option value="50">50 km</option>
+            <option value="100">100 km</option>
+            <option value="4000">All of India</option>
+          </select>
+        </div>
+      </section>
+      <div class="workspace">
+        <section class="map-column" aria-labelledby="map-heading">
+          <div class="section-title">
+            <h2 id="map-heading">
+              <svg class="ic"><use href="#i-map" /></svg>Search map
+            </h2>
+            <button class="smallbtn" id="fit">
+              <svg class="ic"><use href="#i-fit" /></svg>Show search area
+            </button>
+          </div>
+          <div class="map-card">
+            <div class="map-stage">
+              <div id="map" role="region" aria-label="Interactive facility map"></div>
+              <div class="zoom">
+                <button id="zoom-in" title="Zoom in" aria-label="Zoom in">
+                  <svg class="ic"><use href="#i-plus" /></svg></button
+                ><button id="zoom-out" title="Zoom out" aria-label="Zoom out">
+                  <svg class="ic"><use href="#i-minus" /></svg>
+                </button>
+              </div>
+              <button id="search-area" class="search-area" hidden><svg class="ic"><use href="#i-scope" /></svg>Search this area</button>
+              <span id="tile-note" class="tile-note" hidden></span>
+            </div>
+            <div class="legend" aria-label="Map legend">
+              <span><i class="origin-key"></i>Starting point</span
+              ><span><i class="facility-key"></i>Facility</span
+              ><span><i class="selected-key"></i>Selected</span
+              ><span id="pin-order">Pins: balanced rank</span>
+            </div>
+            <div id="selected-strip" class="record-strip" hidden aria-label="Selected facility"></div>
+          </div>
+          <p class="map-location"><svg class="ic"><use href="#i-pin" /></svg><span id="map-origin-readout"></span></p>
+          <p class="map-hint">
+            <svg class="ic"><use href="#i-scope" /></svg>Click to set your starting point. Pinch or scroll to zoom.
+          </p>
+        </section>
+        <section class="results-column" aria-labelledby="results-heading">
+          <div class="section-title">
+            <h2 id="results-heading">Facility rankings</h2>
+            <span id="result-count" class="count-badge">Searching…</span>
+          </div>
+          <div id="result-state"></div>
+          <div id="rankings" class="rankings"></div>
+          <p class="result-hint" id="result-hint">Select a facility to locate it and inspect its evidence.</p>
+        </section>
+      </div>
+      <div id="announcer" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+    </main>
+    <dialog id="location-dialog" aria-labelledby="location-title">
+      <div class="dialog-head">
+        <h2 id="location-title">Starting point</h2>
+        <button class="iconbtn close-dialog" aria-label="Close">
+          <svg class="ic"><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <label for="place-query">Search Indian cities and towns</label
+        ><input id="place-query" type="search" placeholder="Jaipur, Mumbai, Patna…" autocomplete="off" />
+        <div id="place-options"></div>
+        <form id="coordinates">
+          <h3>Enter coordinates</h3>
+          <div class="coord-inputs">
+            <label>Latitude<input id="lat" type="number" required step="any" min="-90" max="90" /></label
+            ><label>Longitude<input id="lon" type="number" required step="any" min="-180" max="180" /></label>
+          </div>
+          <button type="submit" class="primary">Use coordinates</button>
+        </form>
+        <button type="button" id="geolocate" class="textbtn">
+          <svg class="ic"><use href="#i-gps" /></svg>Use my current location
+        </button>
+        <p id="geo-msg" class="small" role="status"></p>
+      </div>
+    </dialog>
+    <dialog id="record-dialog" aria-labelledby="record-title">
+      <div class="dialog-head">
+        <h2 id="record-title">Facility record</h2>
+        <button class="iconbtn close-dialog" aria-label="Close">
+          <svg class="ic"><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <div class="dialog-body" id="record-body"></div>
+    </dialog>
+    <dialog id="report-dialog" aria-labelledby="report-title">
+      <div class="dialog-head"><h2 id="report-title">Report an issue</h2><button type="button" class="iconbtn close-dialog" aria-label="Close"><svg class="ic"><use href="#i-x" /></svg></button></div>
+      <div class="dialog-body">
+        <div id="report-target-wrap" hidden><label for="report-target">About</label><select id="report-target"></select></div>
+        <p id="report-facility" class="report-facility"></p>
+        <p id="report-scope" class="small"></p>
+        <form id="report-form"><fieldset id="report-fields">
+          <label for="report-kind">What looks wrong?</label>
+          <select id="report-kind" required>
+            <option value="">Choose an issue</option><option value="service">Listed service</option>
+            <option value="location">Address or map location</option><option value="facility_details">Facility name or duplicate</option>
+            <option value="evidence">Evidence or source</option><option value="other">Something else</option>
+          </select>
+          <div id="report-record-wrap" hidden><label for="report-record">Which statement looks wrong? (optional)</label><select id="report-record"></select></div>
+          <label for="report-change">What is wrong, and what is correct?</label>
+          <textarea id="report-change" rows="3" required maxlength="2000" placeholder="Describe the issue and the change you suggest."></textarea>
+          <label for="report-source">Supporting link (optional)</label>
+          <input id="report-source" type="url" maxlength="2048" placeholder="https://" />
+          <p class="small">Please include facility information only.</p>
+          <button type="submit" class="primary" id="report-submit">Submit report</button>
+        </fieldset></form>
+        <p id="report-error" role="alert" hidden></p>
+        <div id="report-outcome" role="status" hidden></div>
+      </div>
+    </dialog>
+    <dialog id="guide-dialog" aria-labelledby="guide-title">
+      <div class="dialog-head">
+        <h2 id="guide-title">Ranking guide</h2>
+        <button class="iconbtn close-dialog" aria-label="Close">
+          <svg class="ic"><use href="#i-x" /></svg>
+        </button>
+      </div>
+      <div class="dialog-body" id="guide-body"></div>
+    </dialog>
+    <noscript>Enable JavaScript to use the interactive facility map and rankings.</noscript>
+  </body>
+</html>

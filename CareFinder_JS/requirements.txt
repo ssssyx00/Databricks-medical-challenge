@@ -1,0 +1,7 @@
+# Used by the Databricks Unity Catalog volume report inbox.
+databricks-sdk==0.169.0
+# CareFinder data backend (care_backend/)
+pandas
+numpy
+scikit-learn
+pyyaml

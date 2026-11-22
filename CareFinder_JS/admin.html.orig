@@ -1,0 +1,77 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="care-admin-mode" content="live"><title>CareFinder · Report review</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:#17344e;font:15px/1.5 system-ui,sans-serif}header{background:#102b48;color:white;padding:18px max(5%,calc((100vw - 1180px)/2));display:flex;gap:20px;align-items:center;white-space:nowrap}header b{font-size:21px}header span{border-left:1px solid #64778b;padding-left:18px}main{max-width:1180px;margin:44px auto;padding:0 22px}h1{font-size:38px;letter-spacing:-1.6px;margin:0 0 20px}h2{font-size:21px;margin:0}button,input,select{font:inherit;color:inherit}button,select,input{border:1px solid #bdcbd9;background:white;border-radius:5px;padding:9px 14px}button{cursor:pointer}button:focus-visible,:focus-visible{outline:3px solid #538dd6}button:disabled{opacity:.6}#layout{display:grid;grid-template-columns:minmax(260px,.85fr) minmax(0,1.4fr);gap:20px}article,aside,form{background:white;border:1px solid #d5dfe8;border-radius:9px;padding:23px}.bar,footer{display:flex;align-items:center;justify-content:space-between;gap:8px}.bar select{font-weight:600}.count,small,dt{color:#576d81}.item{width:100%;text-align:left;border:0;border-top:1px solid #dce5ed;border-radius:0;padding:16px 10px}.item strong,.item small{display:block}.item[aria-current=true]{background:#edf4ff;box-shadow:inset 3px 0 #265d99}.item strong{font-size:16px}.tag{color:#80550b;background:#fff2d5;padding:3px 9px;border-radius:12px;font-size:12px;font-weight:700}.note{font-size:18px;white-space:pre-wrap;overflow-wrap:anywhere;padding:18px;background:#f3f6fa;border-left:3px solid #7599bc}dl{display:grid;grid-template-columns:120px 1fr;gap:9px;margin:24px 0}dd{margin:0;overflow-wrap:anywhere}footer{justify-content:flex-start;border-top:1px solid #dde5ec;padding-top:16px}.primary{color:white;background:#164e80;border-color:#164e80}#msg{min-height:24px}form{max-width:520px}form label{display:block;margin-bottom:8px}[hidden]{display:none!important}@media(max-width:750px){#layout{grid-template-columns:1fr}main{margin-top:20px}.note{font-size:16px}}
+.editor{margin-top:18px;border-top:1px solid #dde5ec;padding-top:16px;display:grid;gap:10px}.editor label{display:grid;gap:4px;font-weight:600}.editor .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.editor textarea{font:inherit;border:1px solid #bdcbd9;border-radius:5px;padding:9px;min-height:70px}.current{background:#f3f6fa;border-radius:6px;padding:10px 12px;font-size:14px}.applied{background:#eaf6ee;border-left:3px solid #2f7d4a;padding:10px 12px;margin-top:14px}</style>
+<header><b>✚ CareFinder</b><span>Admin portal</span></header><main><h1>Report review</h1>
+<form id="login"><label for="key">Administrator access key</label><input id="key" type="password" required autocomplete="current-password"><button class="primary">Open queue</button></form>
+<p role="status" id="msg"></p><div id="layout" hidden><aside><div class="bar"><select id="filter" aria-label="Report status"><option value="pending">Pending tasks</option><option value="accepted">Accepted</option><option value="rejected">Not accepted</option></select><button id="refresh">Refresh</button></div><p class="count" id="count"></p><div id="list"></div></aside><article id="detail" aria-label="Report details"></article></div></main>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),demo=document.querySelector('meta[name="care-admin-mode"]')?.content==="demo"||location.protocol==="file:";
+const samples=[["demo_a","location","Please verify the map pin against the address in the source record."],["demo_b","service","Please check whether the record still lists on-site dialysis."]].map(([facility_id,issue_type,suggested_change],i)=>({facility_id,issue_type,suggested_change,status:"pending",service_id:"dialysis",report_id:"sample-"+(i+1),record_id:"demo_record_"+(i?"b":"a"),received_at:"2026-11-21T16:00:00Z",data_mode:"demo",source_url:null,change:null}));
+const ISSUE={service:"Listed service",location:"Address or map location",facility_details:"Facility name or duplicate",evidence:"Evidence or source",other:"Something else"};
+let token="",rows=[],selected=null,busy=false,editing=null,snapshot=null;
+function el(tag,text){const e=document.createElement(tag);if(text!=null)e.textContent=text;return e}
+function input(label,id,value,type="text"){const l=el("label",label),i=el("input");i.id=id;i.type=type;i.value=value??"";if(type==="number")i.step="any";l.append(i);return l}
+function describe(c){if(!c)return"No data change.";
+ if(c.kind==="set_location")return"Map location set to "+c.latitude+", "+c.longitude+".";
+ if(c.kind==="set_details")return"Facility details changed: "+Object.entries(c.fields).map(([k,v])=>k.replace(/_/g," ")+" → "+v).join("; ")+".";
+ if(c.kind==="set_service")return(c.offered?"Service confirmed as offered":"Service removed from this facility")+". Verification: "+c.note;
+ return"Accepted without a data change."+(c.note?" Note: "+c.note:"")}
+function defaultKind(row){if(!row.facility_id)return"none";
+ if(row.issue_type==="location")return"set_location";if(row.issue_type==="facility_details")return"set_details";
+ if(row.issue_type==="service"||row.issue_type==="evidence")return snapshot&&snapshot.service_offered?"remove_service":"confirm_service";return"none"}
+function paint(){
+ const status=$("filter").value,items=rows.filter(r=>r.status===status);
+ $("count").textContent=items.length+" "+(items.length===1?"report":"reports");
+ const list=$("list"),panel=$("detail");list.replaceChildren();panel.replaceChildren();
+ const row=items.find(r=>r.report_id===selected);
+ for(const r of items){const b=el("button","");b.className="item";b.disabled=busy;b.setAttribute("aria-current",String(r===row));b.append(el("strong",r.facility_name||(r.facility_id?"Unknown facility":"Map or search experience")),el("small",ISSUE[r.issue_type]+" · "+(r.service_name||r.service_id)),el("span",(r.suggested_change||"").slice(0,85)));b.onclick=()=>{selected=r.report_id;editing=null;snapshot=null;paint()};list.append(b)}
+ if(!row){panel.append(el("h2",items.length?"Select a report":"No "+(status==="rejected"?"declined":status)+" reports"));return}
+ const tag=el("span",row.status==="rejected"?"Not accepted":row.status);tag.className="tag";
+ panel.append(tag,el("h2",row.facility_name||(row.facility_id?"Unknown facility":"Map or search experience")));if(row.facility_address)panel.append(el("p",row.facility_address));const quote=el("p",row.suggested_change);quote.className="note";panel.append(quote);
+ const dl=el("dl","");for(const [label,value] of [["Issue",ISSUE[row.issue_type]||row.issue_type],["Service",row.service_name||row.service_id],["Received",(row.received_at||"").replace("T"," ").replace("+00:00"," UTC")],["Source",row.source_url],["Report ID",row.report_id]]){const dd=el("dd",value||"—");if(label==="Source"&&/^https?:\/\//i.test(value||"")){const a=el("a",value);a.href=value;a.target="_blank";a.rel="noopener noreferrer";dd.replaceChildren(a)}dl.append(el("dt",label),dd)}panel.append(dl);
+ if(row.status==="accepted"){const a=el("div","");a.className="applied";a.append(el("strong","Applied to the data: "),el("span",describe(row.change)));panel.append(a)}
+ if(status!=="pending")return;
+ if(editing===row.report_id){panel.append(editor(row));return}
+ const actions=el("footer","");
+ const acc=el("button","Accept and edit data…");acc.className="primary";acc.disabled=busy;acc.onclick=()=>openEditor(row);
+ const rej=el("button","Not accept");rej.disabled=busy;rej.onclick=()=>decide(row,"rejected");
+ actions.append(acc,rej);panel.append(actions)}
+async function openEditor(row){editing=row.report_id;snapshot=null;
+ if(row.facility_id&&!demo){try{snapshot=await api(null,"/api/admin/facility?facility_id="+encodeURIComponent(row.facility_id)+"&service_id="+encodeURIComponent(row.service_id))}catch(e){$("msg").textContent=e.message}}
+ paint()}
+function editor(row){
+ const box=el("div","");box.className="editor";const s=snapshot||{};
+ if(row.facility_id){const cur=el("div","");cur.className="current";
+  cur.append(el("strong","Current data: "),el("span",[s.name,s.address_line1,s.address_city].filter(Boolean).join(", ")+(s.latitude!=null?" · "+s.latitude+", "+s.longitude:"")+(s.location_flagged?" · location flagged":"")+" · "+(row.service_name||row.service_id)+": "+(s.service_offered?"offered ("+(s.service_claim||"")+")":"not offered")));
+  for(const q of s.service_quotes||[])cur.append(el("div","“"+q.quote+"” ("+q.field+")"));box.append(cur)}
+ const kind=el("select");kind.id="kind";
+ const opts=row.facility_id?[["set_location","Correct the map location"],["set_details","Correct name or address"],["confirm_service","Confirm this facility offers "+(row.service_name||row.service_id)],["remove_service","Remove "+(row.service_name||row.service_id)+" from this facility"],["none","Accept without a data change"]]:[["none","Accept without a data change"]];
+ for(const [v,t] of opts)kind.append(new Option(t,v));kind.value=defaultKind(row);
+ const lk=el("label","Change to apply");lk.append(kind);box.append(lk);
+ const fields=el("div","");box.append(fields);
+ const render=()=>{fields.replaceChildren();const k=kind.value;
+  if(k==="set_location"){const r=el("div","");r.className="row";r.append(input("Latitude","lat",s.latitude,"number"),input("Longitude","lon",s.longitude,"number"));fields.append(r)}
+  if(k==="set_details"){fields.append(input("Facility name","f_name",s.name),input("Address line","f_address_line1",s.address_line1),input("City","f_address_city",s.address_city),input("State","f_address_stateOrRegion",s.address_stateOrRegion))}
+  if(k==="confirm_service"||k==="remove_service"||k==="none"){const l=el("label",k==="none"?"Note (optional)":"How was this verified? (shown to users as the evidence)");const t=el("textarea");t.id="note";t.value=k==="none"?"":(row.source_url?"Verified against "+row.source_url:"");l.append(t);fields.append(l)}};
+ kind.onchange=render;render();
+ const go=el("button","Apply change and accept");go.className="primary";go.disabled=busy;
+ go.onclick=()=>{const k=kind.value,v=id=>$(id)?.value?.trim();let change;
+  if(k==="set_location")change={kind:k,latitude:Number(v("lat")),longitude:Number(v("lon"))};
+  else if(k==="set_details"){const f={};for(const key of["name","address_line1","address_city","address_stateOrRegion"]){const val=v("f_"+key);if(val&&val!==(s[key]??""))f[key]=val}
+   if(!Object.keys(f).length){$("msg").textContent="Change at least one detail.";return}change={kind:k,fields:f}}
+  else if(k==="confirm_service"||k==="remove_service")change={kind:"set_service",offered:k==="confirm_service",note:v("note")||""};
+  else change={kind:"none",note:v("note")||""};
+  decide(row,"accepted",change)};
+ const cancel=el("button","Cancel");cancel.onclick=()=>{editing=null;paint()};
+ const f=el("footer","");f.append(go,cancel);box.append(f);return box}
+async function api(body,path="/api/admin/reports"){const response=await fetch(path,{method:body?"POST":"GET",cache:"no-store",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok)throw Error(data.error||"Request failed.");return data}
+async function load(){if(busy)return;busy=true;$("refresh").disabled=true;try{rows=demo?samples:await api();$("layout").hidden=false;$("login").hidden=true;$("msg").textContent=demo?"Demo inbox · Decisions last until this page is closed or refreshed.":"";}catch(e){$("msg").textContent=e.message}finally{busy=false;$("refresh").disabled=false;paint()}}
+async function decide(row,status,change){if(busy)return;busy=true;$("msg").textContent=status==="accepted"?"Applying the change and updating search results…":"";paint();
+ try{let res={change:change||null,data_updated:false};if(!demo)res=await api({report_id:row.report_id,status,change});
+  row.status=status;row.change=res.change;editing=null;selected=null;
+  $("msg").textContent="Report "+row.report_id+" marked "+(status==="accepted"?"accepted":"not accepted")+"."+(res.data_updated?" Data updated: "+describe(res.change)+" Search results now reflect it.":"")}
+ catch(e){$("msg").textContent=e.message}finally{busy=false;paint()}}
+$("filter").onchange=()=>{selected=null;editing=null;paint()};$("refresh").onclick=load;$("login").onsubmit=e=>{e.preventDefault();token=$("key").value;$("key").value="";load()};if(demo)load();
+</script></html>

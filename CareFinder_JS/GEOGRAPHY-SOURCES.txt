@@ -1,0 +1,12 @@
+National overview cartography and city search
+
+Natural Earth (public domain). Land, admin-1 boundaries, urban areas, water bodies, river lines and roads. We clipped the geographic extent, simplified linework and encoded coordinates for the browser. National overview lines are generalized.
+https://www.naturalearthdata.com/about/terms-of-use/
+https://www.naturalearthdata.com/downloads/
+
+GeoNames geographical database, cities1000 and admin1CodesASCII, India records. Attribution: GeoNames, licensed under CC BY 4.0. The city search extracts coordinates, names, admin context and selected spelling variants, with a Jaipur preset retained for the sample search. A place lookup selects a representative point.
+https://download.geonames.org/export/dump/
+https://www.geonames.org/export/
+https://creativecommons.org/licenses/by/4.0/
+
+See STREETS-SOURCES.txt for the separately sourced street detail.

@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="care-admin-mode" content="live"><title>CareFinder · Report review</title>
+<style>
+@font-face{font-family:"Atkinson Hyperlegible";src:url("font-atkinson-400.woff2") format("woff2");font-weight:400}@font-face{font-family:"Atkinson Hyperlegible";src:url("font-atkinson-700.woff2") format("woff2");font-weight:700}@font-face{font-family:"Bricolage Grotesque";src:url("font-bricolage.woff2") format("woff2");font-weight:200 800}*{box-sizing:border-box}body{margin:0;background:#f4f5f7;color:#19283e;font:16px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif}header{background:#19283e;border-bottom:3px solid #2859a1;color:white;padding:18px max(5%,calc((100vw - 1180px)/2));display:flex;gap:20px;align-items:center;white-space:nowrap}header b{font-size:22px;font-family:"Bricolage Grotesque",sans-serif}header span{border-left:1px solid #64778b;padding-left:18px}main{max-width:1180px;margin:44px auto;padding:0 22px}h1{font-family:"Bricolage Grotesque",sans-serif;font-size:44px;letter-spacing:-1.2px;margin:0 0 20px}h2{font-family:"Bricolage Grotesque",sans-serif;font-size:22px;margin:0}button,input,select{font:inherit;color:inherit}button,select,input{border:1px solid #d6dae0;background:white;border-radius:5px;padding:9px 14px}button{cursor:pointer}button:focus-visible,:focus-visible{outline:3px solid #b63f3b}button:disabled{opacity:.6}#layout{display:grid;grid-template-columns:minmax(260px,.85fr) minmax(0,1.4fr);gap:20px}article,aside,form{background:white;border:1px solid #d6dae0;border-radius:9px;padding:23px}.bar,footer{display:flex;align-items:center;justify-content:space-between;gap:8px}.bar select{font-weight:600}.count,small,dt{color:#515c6c}.item{width:100%;text-align:left;border:0;border-top:1px solid #dce5ed;border-radius:0;padding:16px 10px}.item strong,.item small{display:block}.item[aria-current=true]{background:#fff1ec;box-shadow:inset 4px 0 #b63f3b}.item strong{font-size:16px}.tag{color:#13335f;background:#e8eef8;padding:3px 9px;border-radius:12px;font-size:12px;font-weight:700}.note{color:#19283e;font-size:18px;white-space:pre-wrap;overflow-wrap:anywhere;padding:18px;background:#e8eef8;border-left:4px solid #2859a1}dl{display:grid;grid-template-columns:120px 1fr;gap:9px;margin:24px 0}dd{margin:0;overflow-wrap:anywhere}footer{justify-content:flex-start;border-top:1px solid #dde5ec;padding-top:16px}.primary{color:white;background:#2859a1;border-color:#2859a1;font-weight:700}#msg{min-height:24px}form{max-width:520px}form label{display:block;margin-bottom:8px}[hidden]{display:none!important}@media(max-width:750px){#layout{grid-template-columns:1fr}main{margin-top:20px}.note{color:#19283e;font-size:16px}}
+.editor{margin-top:18px;border-top:1px solid #dde5ec;padding-top:16px;display:grid;gap:10px}.editor label{display:grid;gap:4px;font-weight:600}.editor .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.editor textarea{font:inherit;border:1px solid #d6dae0;border-radius:5px;padding:9px;min-height:70px}.current{background:#f6f8fb;border-radius:6px;padding:10px 12px;font-size:14px}.applied{background:#eaf6ee;border-left:3px solid #2f7d4a;padding:10px 12px;margin-top:14px}.editor fieldset{border:1px solid #d6dae0;border-radius:8px;padding:12px 14px;margin:0;display:grid;gap:10px}.editor legend{font-weight:700;padding:0 6px;font-family:"Bricolage Grotesque",sans-serif}.res{display:grid;grid-template-columns:minmax(140px,1fr) 150px 90px;gap:8px;align-items:center}.res+.res{border-top:1px dashed #d6dae0;padding-top:8px}.res .qs{grid-column:1/-1;display:grid;gap:4px}.q{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#3b4a5e}.q.hl{background:#fff1ec;border-left:4px solid #b63f3b;padding:4px 8px;border-radius:0 6px 6px 0}.q input{margin-top:3px}.q small{color:#515c6c}.res label{font-weight:700;display:block}.res select,.res input[type=number]{width:100%}</style>
+<header><b>✚ CareFinder</b><span>Admin portal</span></header><main><h1>Report review</h1>
+<form id="login"><label for="key">Administrator access key</label><input id="key" type="password" required autocomplete="current-password"><button class="primary">Open queue</button></form>
+<p role="status" id="msg"></p><div id="layout" hidden><aside><div class="bar"><select id="filter" aria-label="Report status"><option value="pending">Pending tasks</option><option value="accepted">Accepted</option><option value="rejected">Not accepted</option></select><button id="refresh">Refresh</button></div><p class="count" id="count"></p><div id="list"></div></aside><article id="detail" aria-label="Report details"></article></div></main>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),demo=document.querySelector('meta[name="care-admin-mode"]')?.content==="demo"||location.protocol==="file:";
+const samples=[["demo_a","location","Please verify the map pin against the address in the source record."],["demo_b","service","Please check whether the record still lists on-site dialysis."]].map(([facility_id,issue_type,suggested_change],i)=>({facility_id,issue_type,suggested_change,status:"pending",service_id:"dialysis",report_id:"sample-"+(i+1),record_id:"demo_record_"+(i?"b":"a"),received_at:"2026-11-21T16:00:00Z",data_mode:"demo",source_url:null,change:null}));
+const ISSUE={service:"Listed service",location:"Address or map location",facility_details:"Facility name or duplicate",evidence:"Evidence or source",other:"Something else"};
+let token="",rows=[],selected=null,busy=false,editing=null,snapshot=null;
+function el(tag,text){const e=document.createElement(tag);if(text!=null)e.textContent=text;return e}
+function input(label,id,value,type="text"){const l=el("label",label),i=el("input");i.id=id;i.type=type;i.value=value??"";if(type==="number")i.step="any";l.append(i);return l}
+const OPWORD={present:"documented",absent:"not available",unknown:"unknown"};
+function describe(c){if(!c)return"No data change.";
+ if(c.kind==="edit")return c.ops.map(o=>o.op==="details"?"Details: "+Object.entries(o.fields).map(([k,v])=>k.replace(/_/g," ")+" → "+v).join("; ")
+   :o.op==="location"?"Map location → "+o.latitude+", "+o.longitude
+   :o.op==="service"?(o.offered?"Service marked as offered":"Service removed")
+   :o.op==="resource"?o.resource.replace(/_/g," ")+" → "+OPWORD[o.status]+(o.count!=null?" ("+o.count+")":"")
+   :"Removed statement “"+o.quote+"”").join(". ")+". Verification: "+c.note;
+ if(c.kind==="set_location")return"Map location set to "+c.latitude+", "+c.longitude+".";
+ if(c.kind==="set_details")return"Facility details changed: "+Object.entries(c.fields).map(([k,v])=>k.replace(/_/g," ")+" → "+v).join("; ")+".";
+ if(c.kind==="set_service")return(c.offered?"Service confirmed as offered":"Service removed from this facility")+". Verification: "+c.note;
+ return"Accepted without a data change."+(c.note?" Note: "+c.note:"")}
+function paint(){
+ const status=$("filter").value,items=rows.filter(r=>r.status===status);
+ $("count").textContent=items.length+" "+(items.length===1?"report":"reports");
+ const list=$("list"),panel=$("detail");list.replaceChildren();panel.replaceChildren();
+ const row=items.find(r=>r.report_id===selected);
+ for(const r of items){const b=el("button","");b.className="item";b.disabled=busy;b.setAttribute("aria-current",String(r===row));b.append(el("strong",r.facility_name||(r.facility_id?"Unknown facility":"Map or search experience")),el("small",ISSUE[r.issue_type]+" · "+(r.service_name||r.service_id)),el("span",(r.suggested_change||"").slice(0,85)));b.onclick=()=>{selected=r.report_id;editing=null;snapshot=null;paint()};list.append(b)}
+ if(!row){panel.append(el("h2",items.length?"Select a report":"No "+(status==="rejected"?"declined":status)+" reports"));return}
+ const tag=el("span",row.status==="rejected"?"Not accepted":row.status);tag.className="tag";
+ panel.append(tag,el("h2",row.facility_name||(row.facility_id?"Unknown facility":"Map or search experience")));if(row.facility_address)panel.append(el("p",row.facility_address));
+ const quote=el("p",row.suggested_change);quote.className="note";panel.append(quote);
+ const dl=el("dl","");for(const [label,value] of [["Issue",ISSUE[row.issue_type]||row.issue_type],["Service",row.service_name||row.service_id],["Received",(row.received_at||"").replace("T"," ").replace("+00:00"," UTC")],["Source",row.source_url],["Report ID",row.report_id]]){const dd=el("dd",value||"—");if(label==="Source"&&/^https?:\/\//i.test(value||"")){const a=el("a",value);a.href=value;a.target="_blank";a.rel="noopener noreferrer";dd.replaceChildren(a)}dl.append(el("dt",label),dd)}panel.append(dl);
+ if(row.status==="accepted"){const a=el("div","");a.className="applied";a.append(el("strong","Applied to the data: "),el("span",describe(row.change)));panel.append(a)}
+ if(status!=="pending")return;
+ if(editing===row.report_id){panel.append(editor(row));return}
+ const actions=el("footer","");
+ const acc=el("button","Review and edit data…");acc.className="primary";acc.disabled=busy;acc.onclick=()=>openEditor(row);
+ const rej=el("button","Not accept");rej.disabled=busy;rej.onclick=()=>decide(row,"rejected");
+ actions.append(acc,rej);panel.append(actions)}
+async function openEditor(row){editing=row.report_id;snapshot=null;
+ if(row.facility_id&&!demo){try{snapshot=await api(null,"/api/admin/facility?facility_id="+encodeURIComponent(row.facility_id)+"&service_id="+encodeURIComponent(row.service_id))}catch(e){$("msg").textContent=e.message}}
+ paint()}
+function field(label,id,value,type="text"){const l=el("label",label),i=el("input");i.id=id;i.type=type;i.value=value??"";if(type==="number")i.step="any";l.append(i);return l}
+function quoteRow(slot,q,report,idx){const lab=el("label","");lab.className="q"+(report.includes(q.quote)?" hl":"");const c=el("input");c.type="checkbox";c.dataset.slot=slot;c.dataset.quote=q.quote;c.className="rmq";
+ lab.append(c,el("span","Remove “"+q.quote+"” "),el("small","("+q.field.replace(/_/g," ")+")"));return lab}
+function editor(row){
+ const box=el("div","");box.className="editor";const s=snapshot||{};const svcName=row.service_name||row.service_id;
+ if(!row.facility_id){const l=el("label","Note (optional)");const t=el("textarea");t.id="note";l.append(t);box.append(l);
+  const f=el("footer","");const ok=el("button","Accept without changing data");ok.className="primary";ok.onclick=()=>decide(row,"accepted",{kind:"none",note:$("note").value.trim()});
+  const cancel=el("button","Cancel");cancel.onclick=()=>{editing=null;paint()};f.append(ok,cancel);box.append(f);return box}
+ const fd=el("fieldset");fd.append(el("legend","Facility details"));
+ const r1=el("div","");r1.className="row";r1.append(field("Name","e_name",s.name),field("Address line","e_address_line1",s.address_line1));
+ const r2=el("div","");r2.className="row";r2.append(field("City","e_address_city",s.address_city),field("State","e_address_stateOrRegion",s.address_stateOrRegion));
+ const r3=el("div","");r3.className="row";r3.append(field("Latitude","e_lat",s.latitude,"number"),field("Longitude","e_lon",s.longitude,"number"));
+ fd.append(r1,r2,r3);box.append(fd);
+ const fs=el("fieldset");fs.append(el("legend",svcName+" at this facility"));
+ const sl=el("label","Service status");const ss=el("select");ss.id="e_service";ss.append(new Option("Offered","yes"),new Option("Not offered","no"));ss.value=s.service_offered?"yes":"no";sl.append(ss);fs.append(sl);
+ for(const q of s.service_quotes||[])fs.append(quoteRow(row.service_id+"_offered",q,row.suggested_change||""));
+ box.append(fs);
+ if((s.resources||[]).length){const fr=el("fieldset");fr.append(el("legend","Requirements for "+svcName));
+  for(const r of s.resources){const d=el("div","");d.className="res";d.dataset.res=r.resource;
+   const name=el("div","");name.append(el("label",r.label),el("small",r.kind));
+   const st=el("select");st.className="rs";st.append(new Option("Documented","present"),new Option("Not available","absent"),new Option("Unknown","unknown"));st.value=r.status;st.dataset.orig=r.status;
+   const cn=el("input");cn.type="number";cn.min="0";cn.step="1";cn.className="rc";cn.placeholder="count";cn.value=r.count??"";cn.dataset.orig=r.count??"";cn.disabled=!["staff","equipment"].includes(r.kind);
+   const qs=el("div","");qs.className="qs";for(const q of r.quotes)qs.append(quoteRow(r.resource,q,row.suggested_change||""));
+   d.append(name,st,cn,qs);fr.append(d)}
+  box.append(fr)}
+ const nl=el("label","How was this verified? (shown to users as the evidence for your changes)");const t=el("textarea");t.id="note";t.value=row.source_url?"Verified against "+row.source_url:"";nl.append(t);box.append(nl);
+ const save=el("button","Save changes and accept");save.className="primary";save.disabled=busy;
+ save.onclick=()=>{const ops=[],v=id=>$(id)?.value?.trim()??"";
+  const fields={};for(const k of["name","address_line1","address_city","address_stateOrRegion"]){const val=v("e_"+k);if(val&&val!==(s[k]??""))fields[k]=val}
+  if(Object.keys(fields).length)ops.push({op:"details",fields});
+  const lat=Number(v("e_lat")),lon=Number(v("e_lon"));if(Math.abs(lat-s.latitude)>1e-7||Math.abs(lon-s.longitude)>1e-7)ops.push({op:"location",latitude:lat,longitude:lon});
+  if((v("e_service")==="yes")!==!!s.service_offered)ops.push({op:"service",offered:v("e_service")==="yes"});
+  for(const d of box.querySelectorAll(".res")){const st=d.querySelector(".rs"),cn=d.querySelector(".rc");
+   if(st.value!==st.dataset.orig||String(cn.value)!==String(cn.dataset.orig))ops.push({op:"resource",resource:d.dataset.res,status:st.value,count:(cn.value===""||st.value!=="present")?null:Number(cn.value)})}
+  for(const c of box.querySelectorAll(".rmq:checked"))ops.push({op:"remove_quote",slot:c.dataset.slot,quote:c.dataset.quote});
+  if(!ops.length){$("msg").textContent="Nothing was changed. Use “Accept without changing data” instead.";return}
+  decide(row,"accepted",{kind:"edit",ops,note:v("note")})};
+ const plain=el("button","Accept without changing data");plain.onclick=()=>decide(row,"accepted",{kind:"none",note:$("note").value.trim()});
+ const cancel=el("button","Cancel");cancel.onclick=()=>{editing=null;paint()};
+ const f=el("footer","");f.append(save,plain,cancel);box.append(f);return box}
+async function api(body,path="/api/admin/reports"){const response=await fetch(path,{method:body?"POST":"GET",cache:"no-store",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok)throw Error(data.error||"Request failed.");return data}
+async function load(){if(busy)return;busy=true;$("refresh").disabled=true;try{rows=demo?samples:await api();$("layout").hidden=false;$("login").hidden=true;$("msg").textContent=demo?"Demo inbox · Decisions last until this page is closed or refreshed.":"";}catch(e){$("msg").textContent=e.message}finally{busy=false;$("refresh").disabled=false;paint()}}
+async function decide(row,status,change){if(busy)return;busy=true;$("msg").textContent=status==="accepted"?"Applying the change and updating search results…":"";paint();
+ try{let res={change:change||null,data_updated:false};if(!demo)res=await api({report_id:row.report_id,status,change});
+  row.status=status;row.change=res.change;editing=null;selected=null;
+  $("msg").textContent="Report "+row.report_id+" marked "+(status==="accepted"?"accepted":"not accepted")+"."+(res.data_updated?" Data updated: "+describe(res.change)+" Search results now reflect it.":"")}
+ catch(e){$("msg").textContent=e.message}finally{busy=false;paint()}}
+$("filter").onchange=()=>{selected=null;editing=null;paint()};$("refresh").onclick=load;$("login").onsubmit=e=>{e.preventDefault();token=$("key").value;$("key").value="";load()};if(demo)load();
+</script></html>

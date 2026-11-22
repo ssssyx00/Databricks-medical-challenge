@@ -1,0 +1,746 @@
+[
+{
+"id": "24_hour_emergency_care",
+"name": "24-hour emergency care"
+},
+{
+"id": "abdominal_adhesion_surgery",
+"name": "Abdominal adhesion surgery"
+},
+{
+"id": "abdominal_cyst_removal",
+"name": "Abdominal cyst removal"
+},
+{
+"id": "ac_joint_repair_or_reconstruction",
+"name": "AC joint repair or reconstruction"
+},
+{
+"id": "acl_reconstruction",
+"name": "ACL reconstruction"
+},
+{
+"id": "acne_treatment",
+"name": "Acne treatment"
+},
+{
+"id": "addiction_treatment",
+"name": "Addiction treatment"
+},
+{
+"id": "adenoid_removal",
+"name": "Adenoid removal"
+},
+{
+"id": "ambulance_service",
+"name": "Ambulance service"
+},
+{
+"id": "amniocentesis",
+"name": "Amniocentesis"
+},
+{
+"id": "amputation_surgery",
+"name": "Amputation surgery"
+},
+{
+"id": "anal_fistula_treatment",
+"name": "Anal fistula treatment"
+},
+{
+"id": "angioplasty_and_coronary_stenting",
+"name": "Angioplasty and coronary stenting"
+},
+{
+"id": "antenatal_prenatal_care",
+"name": "Antenatal / prenatal care"
+},
+{
+"id": "appendix_removal",
+"name": "Appendix removal"
+},
+{
+"id": "arthritis_care",
+"name": "Arthritis care"
+},
+{
+"id": "arthroscopy",
+"name": "Arthroscopy"
+},
+{
+"id": "asthma_care",
+"name": "Asthma care"
+},
+{
+"id": "ayurveda_panchakarma",
+"name": "Ayurveda / Panchakarma"
+},
+{
+"id": "bariatric_surgery",
+"name": "Bariatric surgery"
+},
+{
+"id": "biopsy",
+"name": "Biopsy"
+},
+{
+"id": "blood_bank",
+"name": "Blood bank"
+},
+{
+"id": "blood_transfusion",
+"name": "Blood transfusion"
+},
+{
+"id": "bone_density_scan_dexa",
+"name": "Bone density scan (DEXA)"
+},
+{
+"id": "bone_marrow_stem_cell_transplant",
+"name": "Bone marrow / stem cell transplant"
+},
+{
+"id": "braces_and_clear_aligners",
+"name": "Braces and clear aligners"
+},
+{
+"id": "brachytherapy",
+"name": "Brachytherapy"
+},
+{
+"id": "brain_tumor_surgery",
+"name": "Brain tumor surgery"
+},
+{
+"id": "breast_cancer_surgery",
+"name": "Breast cancer surgery"
+},
+{
+"id": "bronchoscopy",
+"name": "Bronchoscopy"
+},
+{
+"id": "burn_care",
+"name": "Burn care"
+},
+{
+"id": "c_section",
+"name": "C-section"
+},
+{
+"id": "cancer_immunotherapy",
+"name": "Cancer immunotherapy"
+},
+{
+"id": "cancer_screening",
+"name": "Cancer screening"
+},
+{
+"id": "cancer_surgery",
+"name": "Cancer surgery"
+},
+{
+"id": "cardiac_ablation",
+"name": "Cardiac ablation"
+},
+{
+"id": "cardiac_catheterization_angiography",
+"name": "Cardiac catheterization / angiography"
+},
+{
+"id": "cardiac_intensive_care_cicu_ccu",
+"name": "Cardiac intensive care (CICU/CCU)"
+},
+{
+"id": "cardiac_rehabilitation",
+"name": "Cardiac rehabilitation"
+},
+{
+"id": "cardiac_stress_test",
+"name": "Cardiac stress test"
+},
+{
+"id": "cataract_surgery",
+"name": "Cataract surgery"
+},
+{
+"id": "cervical_screening_pap_smear",
+"name": "Cervical screening / Pap smear"
+},
+{
+"id": "chemotherapy",
+"name": "Chemotherapy"
+},
+{
+"id": "circumcision",
+"name": "Circumcision"
+},
+{
+"id": "cochlear_implant",
+"name": "Cochlear implant"
+},
+{
+"id": "colonoscopy",
+"name": "Colonoscopy"
+},
+{
+"id": "colorectal_surgery",
+"name": "Colorectal surgery"
+},
+{
+"id": "colposcopy",
+"name": "Colposcopy"
+},
+{
+"id": "contact_lens_fitting_and_prescription",
+"name": "Contact lens fitting and prescription"
+},
+{
+"id": "cornea_transplant",
+"name": "Cornea transplant"
+},
+{
+"id": "coronary_bypass_cabg",
+"name": "Coronary bypass (CABG)"
+},
+{
+"id": "corrective_jaw_surgery",
+"name": "Corrective jaw surgery"
+},
+{
+"id": "cosmetic_dentistry_and_smile_design",
+"name": "Cosmetic dentistry and smile design"
+},
+{
+"id": "ct_scan",
+"name": "CT scan"
+},
+{
+"id": "cystoscopy",
+"name": "Cystoscopy"
+},
+{
+"id": "deep_brain_stimulation",
+"name": "Deep brain stimulation"
+},
+{
+"id": "dental_checkup_and_cleaning",
+"name": "Dental checkup and cleaning"
+},
+{
+"id": "dental_crowns_and_bridges",
+"name": "Dental crowns and bridges"
+},
+{
+"id": "dental_fillings",
+"name": "Dental fillings"
+},
+{
+"id": "dental_implants",
+"name": "Dental implants"
+},
+{
+"id": "dental_veneers",
+"name": "Dental veneers"
+},
+{
+"id": "dentures",
+"name": "Dentures"
+},
+{
+"id": "diabetes_care",
+"name": "Diabetes care"
+},
+{
+"id": "diabetic_retinopathy_care",
+"name": "Diabetic retinopathy care"
+},
+{
+"id": "dialysis",
+"name": "Dialysis (any modality)"
+},
+{
+"id": "doppler_ultrasound",
+"name": "Doppler ultrasound"
+},
+{
+"id": "eardrum_repair",
+"name": "Eardrum repair"
+},
+{
+"id": "echocardiography",
+"name": "Echocardiography"
+},
+{
+"id": "eeg",
+"name": "EEG"
+},
+{
+"id": "egg_embryo_freezing",
+"name": "Egg / embryo freezing"
+},
+{
+"id": "egg_donation",
+"name": "Egg donation"
+},
+{
+"id": "electrocardiogram_ecg",
+"name": "Electrocardiogram (ECG)"
+},
+{
+"id": "emergency_c_section",
+"name": "Emergency C-section"
+},
+{
+"id": "emergency_care",
+"name": "Emergency care"
+},
+{
+"id": "emergency_dental_care",
+"name": "Emergency dental care"
+},
+{
+"id": "emg_and_nerve_conduction_studies",
+"name": "EMG and nerve conduction studies"
+},
+{
+"id": "endoscopy",
+"name": "Endoscopy"
+},
+{
+"id": "epilepsy_care",
+"name": "Epilepsy care"
+},
+{
+"id": "ercp",
+"name": "ERCP"
+},
+{
+"id": "erectile_dysfunction_care",
+"name": "Erectile dysfunction care"
+},
+{
+"id": "eye_examination",
+"name": "Eye examination"
+},
+{
+"id": "eyelid_surgery_oculoplastics",
+"name": "Eyelid surgery / oculoplastics"
+},
+{
+"id": "family_planning",
+"name": "Family planning"
+},
+{
+"id": "fibroid_removal_myomectomy",
+"name": "Fibroid removal (myomectomy)"
+},
+{
+"id": "fracture_treatment",
+"name": "Fracture treatment"
+},
+{
+"id": "full_mouth_rehabilitation",
+"name": "Full-mouth rehabilitation"
+},
+{
+"id": "gallbladder_removal",
+"name": "Gallbladder removal"
+},
+{
+"id": "general_medical_consultation",
+"name": "General medical consultation"
+},
+{
+"id": "general_surgery",
+"name": "General surgery"
+},
+{
+"id": "glaucoma_treatment",
+"name": "Glaucoma treatment"
+},
+{
+"id": "gum_disease_treatment",
+"name": "Gum disease treatment"
+},
+{
+"id": "hair_transplant",
+"name": "Hair transplant"
+},
+{
+"id": "hand_surgery",
+"name": "Hand surgery"
+},
+{
+"id": "health_checkup",
+"name": "Health checkup"
+},
+{
+"id": "hearing_test",
+"name": "Hearing test"
+},
+{
+"id": "heart_transplant",
+"name": "Heart transplant"
+},
+{
+"id": "heart_valve_surgery",
+"name": "Heart valve surgery"
+},
+{
+"id": "hemorrhoid_piles_treatment",
+"name": "Hemorrhoid / piles treatment"
+},
+{
+"id": "hernia_repair",
+"name": "Hernia repair"
+},
+{
+"id": "high_dependency_care_hdu",
+"name": "High-dependency care (HDU)"
+},
+{
+"id": "high_risk_pregnancy_care",
+"name": "High-risk pregnancy care"
+},
+{
+"id": "hip_replacement",
+"name": "Hip replacement"
+},
+{
+"id": "histopathology",
+"name": "Histopathology"
+},
+{
+"id": "hiv_testing_care",
+"name": "HIV testing / care"
+},
+{
+"id": "holter_monitoring",
+"name": "Holter monitoring"
+},
+{
+"id": "home_healthcare",
+"name": "Home healthcare"
+},
+{
+"id": "hysterectomy",
+"name": "Hysterectomy"
+},
+{
+"id": "hysteroscopy",
+"name": "Hysteroscopy"
+},
+{
+"id": "icsi",
+"name": "ICSI"
+},
+{
+"id": "infertility_evaluation_and_treatment",
+"name": "Infertility evaluation and treatment"
+},
+{
+"id": "inpatient_care",
+"name": "Inpatient care"
+},
+{
+"id": "icu",
+"name": "Intensive care (ICU)"
+},
+{
+"id": "iui",
+"name": "IUI"
+},
+{
+"id": "ivf",
+"name": "IVF"
+},
+{
+"id": "joint_replacement",
+"name": "Joint replacement"
+},
+{
+"id": "kidney_stone_treatment",
+"name": "Kidney stone treatment"
+},
+{
+"id": "kidney_transplant",
+"name": "Kidney transplant"
+},
+{
+"id": "knee_replacement",
+"name": "Knee replacement"
+},
+{
+"id": "laboratory_testing",
+"name": "Laboratory testing"
+},
+{
+"id": "laparoscopic_surgery",
+"name": "Laparoscopic surgery"
+},
+{
+"id": "laser_dentistry",
+"name": "Laser dentistry"
+},
+{
+"id": "laser_hair_removal",
+"name": "Laser hair removal"
+},
+{
+"id": "lasik_refractive_surgery",
+"name": "LASIK / refractive surgery"
+},
+{
+"id": "liposuction",
+"name": "Liposuction"
+},
+{
+"id": "liver_transplant",
+"name": "Liver transplant"
+},
+{
+"id": "lung_function_testing",
+"name": "Lung function testing"
+},
+{
+"id": "mammography",
+"name": "Mammography"
+},
+{
+"id": "mastoid_surgery",
+"name": "Mastoid surgery"
+},
+{
+"id": "mental_health_counseling",
+"name": "Mental health counseling"
+},
+{
+"id": "migraine_care",
+"name": "Migraine care"
+},
+{
+"id": "minimally_invasive_urology",
+"name": "Minimally invasive urology"
+},
+{
+"id": "mri",
+"name": "MRI"
+},
+{
+"id": "nicu",
+"name": "Neonatal intensive care (NICU)"
+},
+{
+"id": "neurosurgery",
+"name": "Neurosurgery"
+},
+{
+"id": "newborn_care",
+"name": "Newborn care"
+},
+{
+"id": "occupational_therapy",
+"name": "Occupational therapy"
+},
+{
+"id": "oral_and_maxillofacial_surgery",
+"name": "Oral and maxillofacial surgery"
+},
+{
+"id": "outpatient_care",
+"name": "Outpatient care"
+},
+{
+"id": "pacemaker_implantation",
+"name": "Pacemaker implantation"
+},
+{
+"id": "pain_management",
+"name": "Pain management"
+},
+{
+"id": "palliative_care",
+"name": "Palliative care"
+},
+{
+"id": "pediatric_dentistry",
+"name": "Pediatric dentistry"
+},
+{
+"id": "picu",
+"name": "Pediatric intensive care (PICU)"
+},
+{
+"id": "pediatric_surgery",
+"name": "Pediatric surgery"
+},
+{
+"id": "peritoneal_dialysis",
+"name": "Peritoneal dialysis"
+},
+{
+"id": "pet_scan",
+"name": "PET scan"
+},
+{
+"id": "physiotherapy",
+"name": "Physiotherapy"
+},
+{
+"id": "plastic_reconstructive_surgery",
+"name": "Plastic / reconstructive surgery"
+},
+{
+"id": "postnatal_care",
+"name": "Postnatal care"
+},
+{
+"id": "prostate_surgery",
+"name": "Prostate surgery"
+},
+{
+"id": "psoriasis_treatment",
+"name": "Psoriasis treatment"
+},
+{
+"id": "psychotherapy",
+"name": "Psychotherapy"
+},
+{
+"id": "pterygium_removal",
+"name": "Pterygium removal"
+},
+{
+"id": "radiation_therapy",
+"name": "Radiation therapy"
+},
+{
+"id": "retina_examination",
+"name": "Retina examination"
+},
+{
+"id": "retina_surgery_treatment",
+"name": "Retina surgery / treatment"
+},
+{
+"id": "rhinoplasty",
+"name": "Rhinoplasty"
+},
+{
+"id": "robotic_surgery",
+"name": "Robotic surgery"
+},
+{
+"id": "root_canal_treatment",
+"name": "Root canal treatment"
+},
+{
+"id": "sedation_dentistry",
+"name": "Sedation dentistry"
+},
+{
+"id": "semen_analysis",
+"name": "Semen analysis"
+},
+{
+"id": "septoplasty",
+"name": "Septoplasty"
+},
+{
+"id": "shoulder_replacement",
+"name": "Shoulder replacement"
+},
+{
+"id": "sinus_surgery",
+"name": "Sinus surgery"
+},
+{
+"id": "sleep_study",
+"name": "Sleep study"
+},
+{
+"id": "speech_therapy",
+"name": "Speech therapy"
+},
+{
+"id": "spine_surgery",
+"name": "Spine surgery"
+},
+{
+"id": "strabismus_squint_surgery",
+"name": "Strabismus / squint surgery"
+},
+{
+"id": "stroke_treatment",
+"name": "Stroke treatment"
+},
+{
+"id": "tattoo_removal",
+"name": "Tattoo removal"
+},
+{
+"id": "teeth_whitening",
+"name": "Teeth whitening"
+},
+{
+"id": "teleconsultation",
+"name": "Teleconsultation"
+},
+{
+"id": "thyroid_surgery",
+"name": "Thyroid surgery"
+},
+{
+"id": "tonsil_removal",
+"name": "Tonsil removal"
+},
+{
+"id": "tooth_extraction",
+"name": "Tooth extraction"
+},
+{
+"id": "tooth_reshaping",
+"name": "Tooth reshaping"
+},
+{
+"id": "trauma_care",
+"name": "Trauma care"
+},
+{
+"id": "tuberculosis_testing_care",
+"name": "Tuberculosis testing / care"
+},
+{
+"id": "ultrasound",
+"name": "Ultrasound"
+},
+{
+"id": "upper_gi_endoscopy",
+"name": "Upper GI endoscopy"
+},
+{
+"id": "vaccination_and_immunization",
+"name": "Vaccination and immunization"
+},
+{
+"id": "vaginal_delivery",
+"name": "Vaginal delivery"
+},
+{
+"id": "varicose_vein_treatment",
+"name": "Varicose vein treatment"
+},
+{
+"id": "vascular_surgery",
+"name": "Vascular surgery"
+},
+{
+"id": "vitiligo_treatment",
+"name": "Vitiligo treatment"
+},
+{
+"id": "x_ray",
+"name": "X-ray"
+}
+]
