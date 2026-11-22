@@ -1,4 +1,4 @@
-# CareFinder — Find Healthcare Services with Evidence, Not Just Distance
+# CMU Datathon
 
 > An evidence-aware healthcare facility search platform for India, built around the Virtue Foundation dataset for the Databricks Apps & Agents for Good 2026 Hackathon.
 
@@ -19,15 +19,7 @@ Instead of treating missing information as unavailable care, CareFinder makes un
 
 CareFinder combines offline data processing with evidence extraction, service-readiness assessment, and fast geographic search.
 
-```mermaid
-flowchart TD
-    A["Virtue Foundation Data + NFHS-5"] --> B["Data Cleaning & Quality Auditing"]
-    B --> C["Service Evidence Extraction"]
-    C --> D["Readiness & Evidence Certainty"]
-    D --> E["Spatial Search & Ranking"]
-    E --> F["CareFinder Web Interface"]
-    F --> G["User Reports & Admin Review"]
-```
+![CareFinder system architecture](assets/carefinder-architecture-v3.svg)
 
 ### 1. Data Cleaning & Quality Auditing
 
