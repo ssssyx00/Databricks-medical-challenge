@@ -79,12 +79,32 @@ Users can search for services, compare ranked facilities, inspect evidence, and 
 
 The Admin Portal supports report review. In the connected backend, verified corrections are stored with previous values and report IDs for auditability. The standalone frontend preview uses sample reports and temporary review decisions.
 
-## Explore the Demo
+## Project Layout
 
-- **Facility Search:** Open `CareFinder_Preview.html` in a browser. The sample starts in Jaipur with dialysis selected and includes two fictional hospitals to demonstrate ranking and evidence comparison.
-- **Admin Portal:** Open `CareFinder_Admin.html` to explore sample reports and review decisions.
+```text
+.
+├── CareFinder.ipynb          # Methods, evidence extraction, scoring, ranking and evaluation
+├── CareFinder_JS/           # Web application
+│   ├── index.html           # Public facility search page
+│   ├── admin.html           # Report review and correction portal
+│   ├── *.js, styles.css     # Search controls, maps, evidence panels and feedback UI
+│   ├── app.py, backend.py   # Web server and backend integration
+│   ├── reports.py           # Report submission and storage adapters
+│   ├── care_backend/       # Ranking, regional suggestions and report-review API
+│   │   └── data/           # Facility data, service dictionary, evidence and NFHS-5 inputs
+│   ├── start.sh, app.yaml  # Local and Databricks Apps startup
+│   └── requirements.txt   # Python dependencies
+├── assets/                 # Architecture diagram
+└── data_citations.csv       # External data-review citations and evidence metadata
+```
 
-The preview demonstrates the interface without requiring a live backend connection.
+Start with [CareFinder.ipynb](CareFinder.ipynb) for the methodology and analysis. The notebook contains the evidence-extraction and scoring workflow; the web interface and supporting runtime files are in [CareFinder_JS](CareFinder_JS/).
+
+## Explore the App
+
+- **Standalone search preview:** Open [CareFinder_JS/index.html](CareFinder_JS/index.html) locally to explore the sample interface.
+- **Connected application:** From `CareFinder_JS/`, install `requirements.txt` and run `bash start.sh`. Open `http://localhost:8000` for facility search and `http://localhost:8000/admin` for report review. Set `CARE_ADMIN_KEY` before startup to enable administrator access.
+- **Search and review:** Choose a location, service and radius; compare Balanced, Nearest and Best Match; inspect the quoted evidence or report an issue. Administrators can record a decision or apply an explicit, audited correction.
 
 ## Data Sources
 
